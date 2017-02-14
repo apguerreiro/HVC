@@ -4,7 +4,7 @@ HVC
 This software implements algorithms for the hypervolume indicator and for all contributions computation in 3 and 4 dimensions, as well as for the decremental greedy approximation to the Hypervolume Subset Selection Problem (HSSP) in three dimensions.
 
 **NOTE**
-This is a(n incomplete) beta version of the implementation of the algorithms proposed in [ [1] ]. The code is being prepared for release and thus, some features are not yet available and will be added later. These unavailable features are regarding the efficient update of contributions in 3 dimensions (used by HVC4D-U, for example) which is faster than the full recomputation (which is already available in this software) although the time complexity is the same. The missing features will be added soon.
+This is a(n incomplete) beta version of the implementation of the algorithms proposed in [[1] [TR]]. The code is being prepared for release and thus, some features are not yet available and will be added later. These unavailable features are regarding the efficient update of contributions in 3 dimensions (used by HVC4D-U, for example) which is faster than the full recomputation (which is already available in this software) although the time complexity is the same. The missing features will be added soon.
 
 License
 --------
@@ -251,10 +251,10 @@ References
 
 
 
-- A. P. Guerreiro, C. M. Fonseca, “Computing and Updating Hypervolume Contributions in Up to Four Dimensions”, CISUC Technical Report TR-2017-001, University of Coimbra, 2017 [[pdf]([1])]
+[1] A. P. Guerreiro, C. M. Fonseca, “Computing and Updating Hypervolume Contributions in Up to Four Dimensions”, CISUC Technical Report TR-2017-001, University of Coimbra, 2017 [[pdf][TR]]
 
 
-[1]: https://www.cisuc.uc.pt/ckfinder/userfiles/files/TR%202017-01.pdf 
+[TR]: https://www.cisuc.uc.pt/ckfinder/userfiles/files/TR%202017-01.pdf 
 
 
 
