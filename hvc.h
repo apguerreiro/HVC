@@ -37,8 +37,9 @@
 extern "C" {
 #endif
 
-double hvc(double *data, int d, int n, const double *ref, double * contribs, int recompute);
-double gHSSD(double *data, int d, int n, int k, const double *ref, double * contribs, int * selected, int recompute);
+double hvc(double *data, int d, int n, double *ref, double * contribs, int recompute);
+double gHSSD(double *data, int d, int n, int k, double *ref, double * contribs, int * selected, int recompute);
+
 
 #ifdef __cplusplus
 }

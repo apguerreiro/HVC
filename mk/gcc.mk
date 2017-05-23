@@ -11,7 +11,9 @@ CFLAGS += -std=gnu99 $(WARN_CFLAGS)
 
 ifeq ($(DEBUG), 0)
 
- OPT_CFLAGS := -O3 -funroll-loops -ffast-math -DNDEBUG
+
+ OPT_CFLAGS := -O3 -DNDEBUG
+#  OPT_CFLAGS := -O3 -funroll-loops -ffast-math -DNDEBUG
  # Options -msse -mfpmath=sse improve performance but are not portable.
  # Options -fstandard-precision=fast -ftree-vectorize are not well
  # supported in some versions/architectures.

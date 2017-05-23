@@ -1,31 +1,14 @@
 # -*- Makefile-gmake -*-
 VARIANT    ?= 4
 
-HV_SRCS    = hv-plus.c hvc.c
-HV_HDRS    = hv-plus.h hvc.h
+HV_SRCS    = hv-plus.c hvc.c hvc-class.c examples.c
+HV_HDRS    = hv-plus.h hvc.h hvc-class.h examples.h hvc-private.h
 HV_OBJS    = $(HV_SRCS:.c=.o)
 HV_LIB     = hvc.a
 
 $(HV_LIB): $(HV_OBJS)
 	$(QUIET_AR)$(RM) $@ && $(AR) rcs $@ $^
 
-## Augment CFLAGS for hv.[co] objects
-# hv.o: CPPFLAGS += -pg -D VARIANT=$(VARIANT)
-# hv.o: CPPFLAGS += -pg -D VARIANT=$(VARIANT) -fPIC
-# avl.o: CPPFLAGS += -pg
-# timer.o: CPPFLAGS += -pg
-
-
-hv-plus.o: CPPFLAGS += -pg -fPIC
-hvc.o: CPPFLAGS += -pg -fPIC
-avl.o: CPPFLAGS += -pg
-timer.o: CPPFLAGS += -pg
-# 
-# hv-plus.o: CPPFLAGS += -D VARIANT=$(VARIANT) -fPIC
-# hvc.o: CPPFLAGS += -D VARIANT=$(VARIANT) -fPIC
-# avl.o: CPPFLAGS += -fPIC
-# timer.o: CPPFLAGS += -fPIC
-# # hv.o: CPPFLAGS += -D VARIANT=$(VARIANT)
 
 ## Dependencies:
 $(HV_OBJS): $(HV_HDRS)

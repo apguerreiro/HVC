@@ -32,6 +32,7 @@ VERSION = 2svn$(SVN_REV)
 
 ## Default to no debugging info
 DEBUG ?= 0
+## Default to public version of the software
 
 ## Quiet / verbose output:
 ifneq ($(findstring $(MAKEFLAGS),s),s)
@@ -90,6 +91,7 @@ DIST_SRC       = hv-$(VERSION)-src
 ## Global list of CPP flags
 CPPFLAGS = -D DEBUG=$(DEBUG) -D VERSION='"$(VERSION)"'
 
+
 ifneq ($(DEBUG), 0)
 CPPFLAGS += -DMALLOC_CHECK_=3
 endif
@@ -143,9 +145,9 @@ ALL_LDFLAGS = $(LDFLAGS) $(OPT_LDFLAGS)
 .PHONY: all clean dist test default mex
 .NOTPARALLEL:
 #----------------------------------------------------------------------
-default: hvc
+default: hvc hvc-examples
 
-all: clean hvc
+all: clean hvc hvc-examples
 
 clean:
 	$(call ECHO,---> Removing hv <---)
@@ -156,6 +158,10 @@ clean:
 	@$(RM) $(HV_LIB)
 	$(call ECHO,---> Removing backup files <---)
 	@$(RM) *~
+	@$(RM) *.o
+	@$(RM) hvc-examples
+	
+	
 
 dist : DEBUG=0
 dist : CDEBUG=
@@ -182,6 +188,12 @@ hvc: main-hvc.o timer.o io.o hvc.a avl.o
 	$(call ECHO,---> Building $@ version $(VERSION) <---)
 	$(QUIET_LINK)$(CC) $(ALL_LDFLAGS) -o $@ $^
 
+	
+hvc-examples: main-examples.o timer.o io.o avl.o examples.o hvc-class.o hvc.o -lm
+	$(call ECHO,---> Building $@ version $(VERSION) <---)
+	$(QUIET_LINK)$(CC) $(ALL_LDFLAGS) -o $@ $^
+	
+	
 hv.ps: hv-plus.c
 	a2ps -E -g -o hv.ps hv-plus.c
 
@@ -197,8 +209,12 @@ include Makefile.lib
 #----------------------------------------------------------------------
 # Dependencies:
 main-hvc.o: $(HV_HDRS) timer.h io.h
+main-examples.o: $(HV_HDRS) timer.h io.h
 timer.o: timer.h
 io.o: io.h
 
+hvc-class.o: hvc-class.h hvc-private.h io.h
+examples.o: examples.h hvc-class.h
+
 mex: Hypervolume_MEX.c $(HV_SRCS)
-	$(MEX) $(MEXFLAGS) -DVARIANT=$(VARIANT) $^
+	$(MEX) $(MEXFLAGS) -DPRIVATEV=$(PRIVATEV) $^

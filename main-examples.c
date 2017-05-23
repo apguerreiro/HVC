@@ -33,15 +33,15 @@
 
  ----------------------------------------------------------------------
 
- Reference:
+ Relevant literature:
 
- [1] A. P. Guerreiro, C. M. Fonseca, “Computing and Updating Hypervolume Contributions in Up to Four Dimensions”, CISUC Technical Report TR-2017-001, University of Coimbra, 2017
-
+ [1] A. P. Guerreiro, C. M. Fonseca, ...
 
 *************************************************************************/
 #include "io.h"
-#include "hv-plus.h"
-#include "hvc.h"
+// #include "hv-plus.h"
+// #include "hvc.h"
+#include "examples.h"
 #include "timer.h"
 
 #include <errno.h>
@@ -65,10 +65,14 @@ static const char * const stdin_name = "<stdin>";
 static int verbose_flag = 1;
 static bool union_flag = false;
 static char *suffix = NULL;
-static int ksub = -1;
+static int ksub = -1; //subset size or population size
+static int lambda = -1; //number of children for simulating a bounded archive
 static int outflag = 0; //0 - index and contribution (default), 1 - accumulated contribution
 static int recompute = 0; //0 - do not recompute (faster version - only computes what changes), 1 - recompute
 static int hvproblem = 0; //0 - hv, 1, hvc, 2 - gHSSD
+static int exampleTest = 0; //
+static int checkCorrectness = 0;
+static int mode = 0;
 
 static void usage(void)
 {
@@ -352,7 +356,7 @@ run_file (const char *filename, double *reference,
 
     for (n = 0, cumsize = 0; n < nruns; cumsize = cumsizes[n], n++) {
         double time_elapsed_cpu = 0;
-        double volume = 0;
+//         double volume = 0;
 //         int i;
 
         if (verbose_flag == 2)
@@ -360,114 +364,16 @@ run_file (const char *filename, double *reference,
 
         int size = cumsizes[n] - cumsize;
         
-        double * contribs = (double *) malloc(size * sizeof(double));
-        int * selected = (int *) malloc(size * sizeof(int));
-        int k = -1; // = n/2;
-        //TODO: k should have a default value for gHSSD
-        double * times = (double *) malloc(size * sizeof(double)); //TODO: remove later
-        
-        Timer_start ();
-        
-        switch(hvproblem){
-            case 0: //if(hvproblem == 0){
-                volume = hvplus(&data[nobj * cumsize], nobj, size, reference, recompute);
-                break;
-            case 1: //}else if(hvproblem == 1){
-                
-//                 if(!recompute && nobj == 4){
-//                     errprintf ("Not supported yet! Please use flag -R");
-//                     exit (EXIT_FAILURE);
-//                 }
-        
-                volume = hvc(&data[nobj * cumsize], nobj, size, reference, contribs, recompute);
-                break;
-            case 2: //gHSSD - 3D (for now)
-                
-                if(nobj > 3){
-                    errprintf ("%dD is not supported yet!", nobj);
-                    exit (EXIT_FAILURE);
-                }
-        
-//                 k = (ksub >= 0) ? ((ksub < size) ? ksub : size) : size/2;
 
-                k = (ksub == INT_MAX) ? size/2 : ((ksub < size) ? ksub : size);
-//                 printf("k: %d\n", k);
-                
-                
-                //TODO: remove the if statement (leave the else statement) from the public version of the software
-                
-                    volume = gHSSD(&data[nobj * cumsize], nobj, size, k, reference, contribs, selected, recompute);
-                
-                break;
-        }
+        ksub = (ksub == INT_MAX) ? size/2 : ((ksub < size) ? ksub : size);
+//         printf("ksub: %d\n", ksub);
+        int quiet = (verbose_flag == 0 || verbose_flag == 3) ? 1: (verbose_flag == 10) ? 2 : 0;
+//         printf("verbose_flag: %d, quiet: %d\n", verbose_flag, quiet);
+        time_elapsed_cpu = runExample(&data[nobj * cumsize], nobj, size, reference, exampleTest, ksub, lambda, quiet, checkCorrectness, mode, outflag);
 
-        time_elapsed_cpu = Timer_elapsed_virtual ();
-        
-        
-        //print result
-        int i;
-        if(verbose_flag < 10){
-            switch(hvproblem){
-                case 0: //if(hvproblem == 0){
-                    if(verbose_flag == 2) fprintf (outfile, "# hypervolume indicator\n");
-                        fprintf(outfile, "%-16.15g\n", volume);
-                    break;
-                case 1: 
-                    if(verbose_flag == 2) fprintf (outfile, "# contributions\n");
-                    for(i = 0; i < size; i++){
-                        fprintf(outfile, "%-16.15g\n", contribs[i]);
-                    }
-                    break;
-                case 2:
-                    if(outflag == 4){
-                        for(i = k; i < size; i++){
-                            fprintf(outfile, "%d\t%-16.15g\n", selected[i], contribs[i]);
-                        }
-                        //fprintf(outfile, "%-16.15g\n", volume);
-                    }else if(outflag == 5){
-                        for(i = k; i < size; i++){
-                            fprintf(outfile, "%d\n", selected[i]);
-                        }
-                        //fprintf(outfile, "%-16.15g\n", volume);
-                    /*}else if(outflag == 3){
-                        //double thv = 0;
-                        for(i = 0; i < k; i++){
-                            //thv += contribs[i];
-                            fprintf(outfile, "%d\t%-16.15g\n", selected[i], contribs[i]);
-                        }
-                        //fprintf(outfile, "%-16.15g\n", volume);
-                    */
-                    }else if(outflag != 2){
-                        if(verbose_flag == 2) fprintf (outfile, "# index\n");
-                        for(i = 0; i < k; i++){
-    //                         fprintf(outfile, "%d\t%-16.15g\n", selected[i], contribs[i]);
-                            fprintf(outfile, "%d\n", selected[i]);
-                            
-                        }
-                    }
-                    if(outflag == 0 || outflag == 2){
-                        if(verbose_flag == 2) fprintf(outfile, "#hypervolume\n");
-                        fprintf(outfile, "%-16.15g\n", volume);
-                    }
-                    break;
-            }
-        }
-//         if(hvproblem == 0){
-//         }
-        
-        
-        free(contribs);
-        free(selected);
 
         if (verbose_flag == 2) {
             fprintf (outfile, "# Time computing gHSS (cpu): %f seconds\n", time_elapsed_cpu);
-//         }else if(verbose_flag == 3 || verbose_flag == 10) {
-        //TODO: remove this if from the public version of the software (this is needed only for the runtime measurement of gHSSD
-        }else if(verbose_flag == 10 && hvproblem == 2){
-            for(i = k; i < size; i++){
-                fprintf (outfile, "%f\n", times[i]);
-            }
-        
         }else if(verbose_flag == 3 || verbose_flag == 10) {
             fprintf (outfile, "%f\n", time_elapsed_cpu);
             
@@ -516,6 +422,7 @@ int main(int argc, char *argv[])
         {"problem",    required_argument, NULL, 'P'},
         {"recompute",  no_argument,       NULL, 'R'},
         {"subsetsize", required_argument, NULL, 'k'},
+        {"addsetsize", required_argument, NULL, 'l'},
         {"outputformat",required_argument,NULL, 'f'},
 
         {NULL, 0, NULL, 0} /* marks end of list */
@@ -525,7 +432,7 @@ int main(int argc, char *argv[])
     program_invocation_short_name = argv[0];
 #endif
 
-    while (0 < (opt = getopt_long (argc, argv, "hVvqur:s:k:f:m:RP:Q",
+    while (0 < (opt = getopt_long (argc, argv, "hVvqur:s:k:f:m:RP:QT:Cl:m:",
                                    long_options, &longopt_index))) {
         switch (opt) {
         case 'r': // --reference
@@ -567,8 +474,15 @@ int main(int argc, char *argv[])
             break;
 
         case 'k':
+            
             ksub = (strcmp(optarg, "HALF") == 0) ? INT_MAX : atoi(optarg);
 //             ksub = atoi(optarg);
+            break;
+        case 'l':
+            lambda = atoi(optarg);
+            break;
+        case 'm':
+            mode = atoi(optarg); //used for testing different modes to do the same thing, for example, to remove the least contributor
             break;
         case 'R': //recompute
             recompute = 1;
@@ -576,6 +490,14 @@ int main(int argc, char *argv[])
         case 'P': //hvproblem: 0 - hv, 1 - hvc, 2- gHSSD
             hvproblem = atoi(optarg);
             break;
+        case 'T':
+            exampleTest = atoi(optarg);
+            break;
+            
+        case 'C': // checkcorrectness
+            checkCorrectness = 1;
+            break;
+
         case 'f': // 
             // outflag: 0 - index of selected points and corresponding contribuition at the time the point was selected
             // outflag: 1 - index of selected points and accumulated contribution

@@ -4,7 +4,8 @@ HVC
 This software implements algorithms for the hypervolume indicator and for all contributions computation in 3 and 4 dimensions, as well as for the decremental greedy approximation to the Hypervolume Subset Selection Problem (HSSP) in three dimensions.
 
 **NOTE**
-This is a(n incomplete) beta version of the implementation of the algorithms proposed in [[1] [TR]]. The code is being prepared for release and thus, some features are not yet available and will be added later. These unavailable features are regarding the efficient update of contributions in 3 dimensions (used by HVC4D-U, for example) which is faster than the full recomputation (which is already available in this software) although the time complexity is the same. The missing features will be added soon.
+This is a beta version of the implementation of the algorithms proposed in [[1] [TR]]. The code is being prepared for release.
+This software version already includes an interface ('check hvc-class.c') for a data structure that allows the integration of this code so that it can be used interactively, where points can be added/removed as needed and where the user has control regarding whether the contributions should be updated immediately or only after adding/removing several points (a detailed explanation on how to use such data structure will be added in the future. For now, check 'examples.c' that already contains a few examples, where some of them were used in the experiments in the paper).
 
 License
 --------
@@ -167,7 +168,7 @@ Example of basic compilation:
 The file `test.inp` in the `examples`folder provided with this package contains a 3-dimensional example with the following set of *10* points:
 
 	0.16 0.86 0.47 
-	0.66 0.37 0.28 
+	0.66 0.37 0.29 
 	0.79 0.79 0.04 
 	0.28 0.99 0.29 
 	0.51 0.37 0.38
@@ -179,7 +180,7 @@ The file `test.inp` in the `examples`folder provided with this package contains 
 
 
 
-####Hypervolume Indicator
+#### Hypervolume Indicator
 The hypervolume indicator is the problem solved by default. Thus, running:
 
 	./hvc examples/test.inp -r "1 1 1" 
@@ -190,7 +191,7 @@ is equivalent to running:
 	
 and the output produced is the hypervolume indicator given the reference point `(1, 1, 1)`:
 
-	0.320168
+	0.318694
 	
 In the case of a 4-dimensional problem, the hypervolume indicator may be computed in two ways, either with or without flag `-R`. With the flag, the hypervolume indicator is computed by iteratively computing the whole hypervolume indicator in 3 dimension (corresponds to HV4D+-R) while without the flag, for every new iteration, only the contribution (corresponds to HV4D+-U), in 3 dimensions, is computed (see the paper for more details).
 
@@ -204,15 +205,15 @@ To compute all contributions instead, the option `-P 1`must be provided. For exa
 will result in the following output:
 
 	0.010741        
-	0.014623        
-	0.000441        
-	0.000549        
-	0.032475        
-	0.00168         
-	0.03465         
-	0.00018         
-	0.03036         
-	0.002205 
+    0.013149        
+    0.000441        
+    0.000549        
+    0.032475        
+    0.00176         
+    0.03465         
+    0.00018         
+    0.03036         
+    0.002296 
 
 	
 where the *i*-th line corresponds to the contribution of the *i*-th input point to the set of input points given the reference point `(1, 1, 1)`.
@@ -229,12 +230,12 @@ To compute the greedy solution for a subset of size 5 considering the reference 
 
 which results in the following output:
 
-	3
 	1
-	5
-	9
-	2
-	0.319268  
+    4
+    6
+    8
+    9
+    0.304494
 
 
 In all output formats available (through option `-f`), except in `2` (i.e., `-f 2`), the first column of the first *k* lines refers to the indices (between *0* and *n-1*) of the selected points. In the above example, one of the selected points was the (3+1)-th in the file, i.e., `(0.28, 0.99, 0.29)`. The last line of the *default* output format (`-f 0`), contains the hypervolume indicator of the greedy solution, i.e., of the *k* selected points. If option `-f 1` is given, the outptut contains only the indices (i.e, the first *k* lines in option `-f 0`), if option `-f 2` is given instead, only the hypervolume indicator of the selected subset is printed.
@@ -242,8 +243,8 @@ In all output formats available (through option `-f`), except in `2` (i.e., `-f 
 Once again, the flag `-R` may be used in the 4-dimensional case.
 
 
-**Note**
-In this beta version, when `-P 1` (all contributions) and `-P 2` (greedy algorithm) are used in a four-dimensional case, the flag `-R` is mandatory!
+<!-- **Note** -->
+<!-- In this beta version, when `-P 1` (all contributions) and `-P 2` (greedy algorithm) are used in a four-dimensional case, the flag `-R` is mandatory! -->
 
 
 References

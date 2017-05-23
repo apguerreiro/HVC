@@ -55,29 +55,27 @@
 #define AVL_DEPTH
 
 
+/* ---------------------------------- Auxiliar Functions ----------------------------------*/
+//3D points
+static inline int lexicographicLess(double * a, double * b){
+    return (a[2] < b[2] || (a[2] == b[2] && (a[1] < b[1] || (a[1] == b[1] && a[0] <= b[0]))));
+}
+
+
 
 
 /* ---------------------------------- Data Structure ---------------------------------------*/
-
 
 typedef struct dlnode {
   double x[4];                    /* The data vector              */
   struct dlnode * closest[2]; // closest[0] == cx, closest[1] == cy
   struct dlnode * cnext[2]; //current next
-//   struct dlnode * head[2]; //lowest (0 - x, 1 - y)
+
+  struct dlnode * next[4]; //keeps the points sorted according to coordinates 2,3 and 4
+                           // (in the case of 2 and 3, only the points swept by 4 are kept)
+  struct dlnode *prev[4]; //keeps the points sorted according to coordinates 2 and 3 (except the sentinel 3)
   
-//   double area;
-//   double volume;
-//   double lastSlicez;
-  
-  struct dlnode * next[4]; //keeps the points sorted according to coordinates 2,3 and 4 (in the case of 2 and 3, only the points swept by 4 are kept)
-  struct dlnode *prev[4]; //keeps the points sorted according to coordinates 2 and 3 (excepto o sentinela 3)
-  
-//   double hvolume; //4D
   int ndomr;    //number of dominators
-  
-  
-  
 } dlnode_t;
 
 
@@ -92,28 +90,22 @@ static dlnode_t * initSentinels(dlnode_t * list, const double * ref, int d){
     dlnode_t * s2 = list + 1;
     dlnode_t * s3 = list + 2;
     
-    
     s1->x[0] = -DBL_MAX;
     s1->x[1] = ref[1];
     s1->x[2] = -DBL_MAX;
     s1->x[3] = -DBL_MAX;
     s1->closest[0] = s2;
     s1->closest[1] = s1;  
-//     s1->head[0] = s1->head[1] = s1;
-    
-//     s1->prev[1] = s3;
-//     s1->next[1] = NULL;
+
     s1->next[2] = s2;
     s1->next[3] = s2;
     s1->cnext[1] = NULL;  
-    s1->cnext[0] = NULL;  
+    s1->cnext[0] = NULL; 
     
     s1->prev[2] = s3;
     s1->prev[3] = s3;
     s1->ndomr = 0;
-//     s1->domr = NULL;
-//     s1->id = -1;
-    
+
     
     s2->x[0] = ref[0];
     s2->x[1] = -DBL_MAX;
@@ -121,15 +113,7 @@ static dlnode_t * initSentinels(dlnode_t * list, const double * ref, int d){
     s2->x[3] = -DBL_MAX;
     s2->closest[0] = s2; 
     s2->closest[1] = s1; 
-//     s2->area = 0;
-//     s2->volume = 0;
-//     s2->oldvolume = 0;
-// // //     s2->head[0] = s2->head[1] = NULL;
-//     s2->head[0] = s2->head[1] = s2;
-    
-//     s2->prev[1] = NULL;
-// //     s2->next[1] = s1;
-//     s2->next[1] = s3;
+
     s2->next[2] = s3;
     s2->next[3] = s3;
     s2->cnext[1] = NULL;  
@@ -138,15 +122,11 @@ static dlnode_t * initSentinels(dlnode_t * list, const double * ref, int d){
     s2->prev[2] = s1;
     s2->prev[3] = s1;
     s2->ndomr = 0;
-//     s2->domr = NULL;
-//     s2->id = -2;
-    
-// //     s2->cnext[1] = s1;
-// //     s1->cnext[0] = s2;
+
     
     
-    s3->x[0] = -INT_MAX; //minv - 10;
-    s3->x[1] = -INT_MAX; //minv - 10;
+    s3->x[0] = -INT_MAX; 
+    s3->x[1] = -INT_MAX; 
     s3->x[2] = ref[2];
     if(d == 4)
         s3->x[3] = ref[3];
@@ -154,15 +134,7 @@ static dlnode_t * initSentinels(dlnode_t * list, const double * ref, int d){
         s3->x[3] = - DBL_MAX;
     s3->closest[0] = s2;
     s3->closest[1] = s1;
-//     s3->area = 0;
-//     s3->volume = 0;
-//     s3->oldvolume = 0;
-// // //     s3->head[0] = s3->head[1] = NULL;
-//     s3->head[0] = s3->head[1] = s3;
     
-//     s3->next[1] = s1;
-//     s3->prev[1] = s2;
-// //     s3->next[1] = NULL;
     s3->next[2] = s1;
     s3->next[3] = NULL;
     s3->cnext[1] = NULL;  
@@ -171,9 +143,7 @@ static dlnode_t * initSentinels(dlnode_t * list, const double * ref, int d){
     s3->prev[2] = s2;
     s3->prev[3] = s2;
     s3->ndomr = 0;
-//     s3->domr = NULL;
-//     s3->id = -3;
-    
+
     
     return s1;
     
@@ -188,20 +158,12 @@ static void clearPoint(dlnode_t * list, dlnode_t * p){
     p->closest[1] = list;
     p->closest[0] = list->next[2]; 
     
+    /* because of printfs */
     p->cnext[1] = list;
     p->cnext[0] = list->next[2];
     
-// //     p->head[0] = p->head[1] = NULL;   
-//     p->head[0] = p->cnext[0];
-//     p->head[1] = p->cnext[1];
     
-//     p->area = 0;
-//     p->volume = 0;
-//     p->oldvolume = 0;
-//     p->hvolume = 0;
-//     p->lastSlicez = p->x[2];
     p->ndomr = 0;
-//     p->domr = NULL;
     
 }
 
@@ -209,15 +171,9 @@ static void clearPoint(dlnode_t * list, dlnode_t * p){
 
 static dlnode_t * point2Struct(dlnode_t * list, dlnode_t * p, double * v, int d){
     
-//     int d = 3;
-    
     int i;
     for(i = 0; i < d; i++)
         p->x[i] = v[i];
-    
-    
-//     p->next[1] = NULL;
-//     p->prev[1] = NULL;
     
     
     clearPoint(list, p);
@@ -233,7 +189,8 @@ static dlnode_t * point2Struct(dlnode_t * list, dlnode_t * p, double * v, int d)
 
 static void addToZ(dlnode_t * new){
     
-    new->next[2] = new->prev[2]->next[2]; 
+    new->next[2] = new->prev[2]->next[2]; //in case new->next[2] was removed for being dominated
+    
     new->next[2]->prev[2] = new;
     new->prev[2]->next[2] = new;
 }
@@ -245,18 +202,12 @@ static void removeFromz(dlnode_t * old){
 }
 
 
-
+/* check if new is dominated, find cx and cy of the 'new' point and find where to insert 'new' in the
+ * list sorted by z
+ */
 static void setupZandClosest(dlnode_t * list, dlnode_t * new){
     
             
-//     dlnode_t * closest0 = list->next[2];
-//     dlnode_t * closest1 = list;
-//     new->closest[0] = closest0;
-//     new->closest[1] = closest1;
-
-//     double * closest1 = (double *) (new->closest[1]);
-//     double * closest0 = (double *) (new->closest[0]);
-    
     double * closest1 = (double *) (list);
     double * closest0 = (double *) (list->next[2]);
 
@@ -265,13 +216,12 @@ static void setupZandClosest(dlnode_t * list, dlnode_t * new){
     double * newx = new->x;
     
     
-    while(q->x[2] <= newx[2]){
-//         printf("%f %f %f\n", q->x[0], q->x[1], q->x[2]);
+    while(lexicographicLess(q->x, newx)){
         if(q->x[0] <= newx[0] && q->x[1] <= newx[1]){
                 
             new->ndomr += 1;
-//             new->domr = q;
-//                 return new;
+            //new->domr = q;
+            //return new;
                 
         }else if(q->x[1] < newx[1] && (q->x[0] < closest0[0] || (q->x[0] == closest0[0] && q->x[1] < closest0[1]))){
             closest0 = (double *) q;
@@ -282,7 +232,7 @@ static void setupZandClosest(dlnode_t * list, dlnode_t * new){
         q = q->next[2];
     }
     
-    new->closest[0] = new->cnext[0] = (dlnode_t *) closest0; 
+    new->closest[0] = new->cnext[0] = (dlnode_t *) closest0;
     new->closest[1] = new->cnext[1] = (dlnode_t *) closest1;
     
     new->prev[2] = q->prev[2];
@@ -318,10 +268,10 @@ static int updateLinks(dlnode_t * list, dlnode_t * new, dlnode_t * p){
                     ndom += 1;
                     removeFromz(p); //HV-ONLY (does not need dominated to compute HV)
                     
-                }else if(new->x[0] < p->x[0] && (new->x[1] < p->closest[1]->x[1] || (new->x[1] == p->closest[1]->x[1] && (new->x[0] < p->closest[1]->x[0] || (new->x[0] == p->closest[1]->x[0] && new->x[2] < p->closest[1]->x[2]))))){ // new->x[1] > p->x[1] //testeDE.6
+                }else if(new->x[0] < p->x[0] && (new->x[1] < p->closest[1]->x[1] || (new->x[1] == p->closest[1]->x[1] && (new->x[0] < p->closest[1]->x[0] || (new->x[0] == p->closest[1]->x[0] && new->x[2] < p->closest[1]->x[2]))))){ // new->x[1] > p->x[1]
                     p->closest[1] = new;
                 }
-            }else if(new->x[1] < p->x[1] && (new->x[0] < p->closest[0]->x[0] || (new->x[0] == p->closest[0]->x[0] && (new->x[1] < p->closest[0]->x[1] || (new->x[1] == p->closest[0]->x[1] && new->x[2] < p->closest[0]->x[2]))))){//new->x[0] > p->x[0] //testeDE.6
+            }else if(new->x[1] < p->x[1] && (new->x[0] < p->closest[0]->x[0] || (new->x[0] == p->closest[0]->x[0] && (new->x[1] < p->closest[0]->x[1] || (new->x[1] == p->closest[0]->x[1] && new->x[2] < p->closest[0]->x[2]))))){//new->x[0] > p->x[0]
                 p->closest[0] = new;
             }
             
@@ -467,10 +417,6 @@ static int compare_tree_asc_y( const void *p1, const void *p2)
     const double x1= *((const double *)p1+1);
     const double x2= *((const double *)p2+1);
 
-//     if (x1 != x2)
-//         return (x1 < x2) ? -1 : 1;
-//     else
-//         return 0;
     if (x1 < x2)
         return -1;
     else if (x1 > x2)
@@ -565,7 +511,7 @@ static void preprocessing(dlnode_t * list){
 
 static void restartListy(dlnode_t * list){
     
-    list->next[2]->cnext[1] = list; 
+    list->next[2]->cnext[1] = list; //link sentinels sentinels ((-inf ref[1] -inf) and (ref[0] -inf -inf))
     list->cnext[0] = list->next[2];
     
 }
@@ -585,12 +531,8 @@ static double computeAreaSimple(double * p, int di, dlnode_t * s, dlnode_t * u){
 
     }
  
-    
     return area;
-    
 }
-
-
 
 //does what setupZandClosest does while reconstructing L at z = new->x[2]
 static void restartBaseSetupZandClosest(dlnode_t * list, dlnode_t * new){
@@ -604,34 +546,29 @@ static void restartBaseSetupZandClosest(dlnode_t * list, dlnode_t * new){
     
     restartListy(list);
     
-    while(p->x[2] <= newx[2]){
-            
+    while(lexicographicLess(p->x, newx)){
         
-            //reconstruct
-            p->cnext[0] = p->closest[0];
-            p->cnext[1] = p->closest[1];
+        //reconstruct
+        p->cnext[0] = p->closest[0];
+        p->cnext[1] = p->closest[1];
+        
+        p->cnext[0]->cnext[1] = p;
+        p->cnext[1]->cnext[0] = p;
+        
+        
+        //setupZandClosest
+        if(p->x[0] <= newx[0] && p->x[1] <= newx[1]){
             
-            p->cnext[0]->cnext[1] = p;
-            p->cnext[1]->cnext[0] = p;
-            
-            
-            //setupZandClosest
-            if(p->x[0] <= newx[0] && p->x[1] <= newx[1]){
+            new->ndomr += 1;
+            //new->domr = p;
+            //return new;
                 
-                new->ndomr += 1;
-    //             new->domr = p;
-    //                 return new;
-                    
-            }else if(p->x[1] < newx[1] && (p->x[0] < closest0[0] || (p->x[0] == closest0[0] && p->x[1] < closest0[1]))){
-                closest0 = (double *) p;
-            }else if(p->x[0] < newx[0] && (p->x[1] < closest1[1] || (p->x[1] == closest1[1] && p->x[0] < closest1[0]))){
-                closest1 = (double *) p;
-            }
-//         }else{
-//             p->prev[2]->next[2] = p->next[2];
-//             p->next[2]->prev[2] = p->prev[2];
-//         }
-        
+        }else if(p->x[1] < newx[1] && (p->x[0] < closest0[0] || (p->x[0] == closest0[0] && p->x[1] < closest0[1]))){
+            closest0 = (double *) p;
+        }else if(p->x[0] < newx[0] && (p->x[1] < closest1[1] || (p->x[1] == closest1[1] && p->x[0] < closest1[0]))){
+            closest1 = (double *) p;
+        }
+    
         p = p->next[2];
     }
     
@@ -661,17 +598,12 @@ static double oneContribution3d(dlnode_t * list, dlnode_t * new){
     new->cnext[0] = new->closest[0];
     new->cnext[1] = new->closest[1];
     area = computeAreaSimple(new->x, 1, new->cnext[0], new->cnext[0]->cnext[1]);
-//     printf("area: %f\n", area);
-    
     
     p = new->next[2];
     double lastz = new->x[2];
     
     while(p->x[0] > new->x[0] || p->x[1] > new->x[1]){
-//         if(p->ndomr < 1){
-//            printf("here\n"); 
-//             volume += area * (p->x[2]- p->prev[2]->x[2]);
-            volume += area * (p->x[2]- lastz);
+        volume += area * (p->x[2]- lastz);
             p->cnext[0] = p->closest[0];
             p->cnext[1] = p->closest[1];
             
@@ -683,7 +615,7 @@ static double oneContribution3d(dlnode_t * list, dlnode_t * new){
                 
             }else if(p->x[0] >= new->x[0]){
                 if(p->x[0] <= new->cnext[0]->x[0]){
-                    x[0] = p->x[0]; x[1] = new->x[1]; x[2] = p->x[2];
+                    x[0] = p->x[0]; x[1] = new->x[1]; x[2] = p->x[2]; 
                     area -= computeAreaSimple(x, 1, new->cnext[0], new->cnext[0]->cnext[1]);
                     p->cnext[0] = new->cnext[0];
                     p->cnext[1]->cnext[0] = p;
@@ -691,7 +623,7 @@ static double oneContribution3d(dlnode_t * list, dlnode_t * new){
                 }
             }else{
                 if(p->x[1] <= new->cnext[1]->x[1]){
-                    x[0] = new->x[0]; x[1] = p->x[1]; x[2] = p->x[2];
+                    x[0] = new->x[0]; x[1] = p->x[1]; x[2] = p->x[2]; 
                     area -= computeAreaSimple(x, 0, new->cnext[1], new->cnext[1]->cnext[0]);
                     p->cnext[1] = new->cnext[1];
                     p->cnext[0]->cnext[1] = p;
@@ -699,28 +631,15 @@ static double oneContribution3d(dlnode_t * list, dlnode_t * new){
                 }
                 
             }
-//         }else{
-            
-//             printf("remove dom\n");
-//             removeFromz(p);
-// //             p->prev[2]->next[2] = p->next[2];
-// //             p->next[2]->prev[2] = p->prev[2];
-// // //             p->prev[1]->next[1] = p->next[1];
-// // //             p->next[1]->prev[1] = p->prev[1];
-//         }
         lastz = p->x[2];
         p = p->next[2];
         
     }
     
-//     volume += area * (p->x[2]- p->prev[2]->x[2]);
-//     printf("lastz: %f\n", lastz);
     volume += area * (p->x[2]- lastz);
-//     printf("contrib: %f\n", volume);
     return volume;
     
 }
-
 
 
 
@@ -746,9 +665,6 @@ static double hv3dplus(dlnode_t * list){
             p->cnext[1]->cnext[0] = p;
         }else{
             removeFromz(p);
-//             p->prev[2]->next[2] = p->next[2];
-//             p->next[2]->prev[2] = p->prev[2];
- 
         }
         
         volume += area * (p->next[2]->x[2]- p->x[2]);
@@ -760,7 +676,6 @@ static double hv3dplus(dlnode_t * list){
     return volume;
     
 }
-
 
 
 /* Compute the hypervolume indicator in d=4 by iteratively
@@ -822,7 +737,6 @@ double hv4dplusU(dlnode_t * list)
     return hv;
     
 }
-
 
 
 /* Compute the hypervolume indicator in d=3,4
