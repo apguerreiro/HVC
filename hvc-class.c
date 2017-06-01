@@ -377,10 +377,22 @@ double addPoint(hvc_s * hvcs, double * point, int updateContribs){
     return newp->volume;
 }
 
+
+static dlnode_t * getPointNodeAt(hvc_s * hvcs, int i){
+    if(i >= hvcs->n) return NULL;
+    if(hvcs->saved) return hvcs->i2struct[i];
+    int j;
+    dlnode_t * p = hvcs->list->next[0];
+    for(j = 0; j < i; j++, p = p->next[0]);
+    return p;
+}
+
+
+
 int removePointAt(hvc_s * hvcs, int i, int updateContribs){
     if(hvcs->ndom > 0) return -1;
-    if(!hvcs->saved) saveContributions(hvcs);
-    removePointNode(hvcs, hvcs->i2struct[i], updateContribs);
+    dlnode_t * p = getPointNodeAt(hvcs, i);
+    removePointNode(hvcs, p, updateContribs);
     return 1;
 }
 
